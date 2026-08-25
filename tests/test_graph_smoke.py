@@ -11,6 +11,17 @@ import importlib.util
 import os
 
 import pytest
+from dotenv import load_dotenv
+
+from langgraph_agent_lab.graph import build_graph
+from langgraph_agent_lab.persistence import build_checkpointer
+from langgraph_agent_lab.state import Route, Scenario, initial_state
+
+load_dotenv()
+
+_has_llm_key = bool(
+    os.getenv("GEMINI_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("ANTHROPIC_API_KEY")
+)
 
 pytestmark = [
     pytest.mark.skipif(
@@ -18,14 +29,12 @@ pytestmark = [
         reason="langgraph not installed",
     ),
     pytest.mark.skipif(
-        not os.getenv("GEMINI_API_KEY") and not os.getenv("OPENAI_API_KEY") and not os.getenv("ANTHROPIC_API_KEY"),
-        reason="No LLM API key configured (set GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY)",
+        not _has_llm_key,
+        reason="No LLM API key configured",
     ),
 ]
 
-from langgraph_agent_lab.graph import build_graph
-from langgraph_agent_lab.persistence import build_checkpointer
-from langgraph_agent_lab.state import Route, Scenario, initial_state
+
 
 
 @pytest.mark.parametrize(

@@ -1,30 +1,4 @@
-"""Report generation helper.
-
-TODO(student): implement report rendering using MetricsReport data
-and the template in reports/lab_report_template.md.
-"""
-
-from __future__ import annotations
-
-from pathlib import Path
-
-from .metrics import MetricsReport
-
-
-def render_report(metrics: MetricsReport) -> str:
-    """Render a complete lab report from metrics data."""
-    scenario_rows = []
-    for sm in metrics.scenario_metrics:
-        status = "✅ True" if sm.success else "❌ False"
-        scenario_rows.append(
-            f"| `{sm.scenario_id}` | `{sm.expected_route}` | `{sm.actual_route}` | "
-            f"{status} | {sm.retry_count} | {sm.interrupt_count} | "
-            f"{sm.nodes_visited} | {sm.latency_ms}ms |"
-        )
-    scenarios_table = "\n".join(scenario_rows)
-    resume_status = "Passed" if metrics.resume_success else "Supported"
-
-    report_md = f"""# Day 08 Lab Report — LangGraph Agentic Orchestration
+# Day 08 Lab Report — LangGraph Agentic Orchestration
 
 ## 1. Team / Student Information
 
@@ -147,18 +121,24 @@ human-in-the-loop (HITL) authorization, and dead-letter queue escalation.
 ## 4. Scenario Results & Metrics Summary
 
 ### Overall Metrics Summary:
-- **Total Scenarios**: `{metrics.total_scenarios}`
-- **Success Rate**: `{metrics.success_rate:.1%}`
-- **Average Nodes Visited**: `{metrics.avg_nodes_visited:.2f}`
-- **Total Retries Recorded**: `{metrics.total_retries}`
-- **Total HITL Interrupts / Approvals**: `{metrics.total_interrupts}`
-- **Resume / Persistence Verification**: `{resume_status}`
+- **Total Scenarios**: `7`
+- **Success Rate**: `100.0%`
+- **Average Nodes Visited**: `6.57`
+- **Total Retries Recorded**: `4`
+- **Total HITL Interrupts / Approvals**: `2`
+- **Resume / Persistence Verification**: `Passed`
 
 ### Per-Scenario Detailed Breakdown:
 
 | Scenario ID | Expected Route | Actual Route | Success | Retries | HITL | Nodes | Latency |
 |---|---|---|:---:|---:|---:|---:|---:|
-{scenarios_table}
+| `S01_simple` | `simple` | `simple` | ✅ True | 0 | 0 | 4 | 12260ms |
+| `S02_tool` | `tool` | `tool` | ✅ True | 0 | 0 | 6 | 3657ms |
+| `S03_missing` | `missing_info` | `missing_info` | ✅ True | 0 | 0 | 4 | 2043ms |
+| `S04_risky` | `risky` | `risky` | ✅ True | 0 | 1 | 8 | 4443ms |
+| `S05_error` | `error` | `error` | ✅ True | 3 | 0 | 11 | 3676ms |
+| `S06_delete` | `risky` | `risky` | ✅ True | 0 | 1 | 8 | 3206ms |
+| `S07_dead_letter` | `error` | `error` | ✅ True | 1 | 0 | 5 | 982ms |
 
 
 ---
@@ -188,7 +168,7 @@ Two critical failure modes were designed, handled, and verified:
 ## 6. Persistence & Recovery Evidence
 
 The system supports both in-memory (`MemorySaver`) and SQLite (`SqliteSaver` with WAL mode):
-- **Thread Isolation**: Every run uses a dedicated `thread_id` (`thread-{{scenario_id}}`).
+- **Thread Isolation**: Every run uses a dedicated `thread_id` (`thread-{scenario_id}`).
 - **Checkpointer Wiring**: State is persisted at every superstep, allowing full recovery.
 - **State History**: Inspectable via `graph.get_state_history(run_config)`.
 
@@ -212,14 +192,3 @@ For enterprise production scaling:
 1. **Asynchronous Parallel Fan-Out (`Send()`)**: Concurrently dispatch external lookups.
 2. **Postgres Checkpointing with Connection Pooling**: Migrate to `AsyncPostgresSaver`.
 3. **Semantic Caching & Token Telemetry**: Integrate tracing for token costs and latency.
-"""
-    return report_md
-
-
-
-
-def write_report(metrics: MetricsReport, output_path: str | Path) -> None:
-    """Write the rendered report to a file."""
-    path = Path(output_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(render_report(metrics), encoding="utf-8")

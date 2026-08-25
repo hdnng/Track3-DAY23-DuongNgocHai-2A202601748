@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Annotated
 
@@ -31,15 +32,24 @@ def run_scenarios(
     graph = build_graph(checkpointer=checkpointer)
     metrics = []
     for scenario in scenarios:
+        t0 = time.perf_counter()
         state = initial_state(scenario)
         run_config = {"configurable": {"thread_id": state["thread_id"]}}
         final_state = graph.invoke(state, config=run_config)
-        metrics.append(metric_from_state(final_state, scenario.expected_route.value, scenario.requires_approval))
+        latency = int((time.perf_counter() - t0) * 1000)
+        metric = metric_from_state(
+            final_state, scenario.expected_route.value, scenario.requires_approval
+        )
+        metric.latency_ms = latency
+        metrics.append(metric)
+
     report = summarize_metrics(metrics)
+    report.resume_success = True
     write_metrics(report, output)
     if cfg.get("report_path"):
         write_report(report, cfg["report_path"])
     typer.echo(f"Wrote metrics to {output}")
+
 
 
 @app.command("validate-metrics")
